@@ -31,6 +31,20 @@ Resources:
                                 eventName: 
                                     - "RunInstances"
 
+    ModifyTagAPIFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: modify_tag_api/
+            Handler: app.handler
+            Runtime: nodejs8.10
+            Role: !GetAtt IAMTagValidationEnforcementExecutionRole.Arn
+            Events:
+                ModifyTagAPI:
+                    Type: Api
+                    Properties:
+                        Path: /modify-tags
+                        Method: POST
+    
     UserGroupMetadataTable:
         Type: AWS::DynamoDB::Table
         Properties:

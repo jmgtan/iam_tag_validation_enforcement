@@ -1,0 +1,10 @@
+{
+  "name": "modify_tag_api",
+  "version": "0.1",
+  "description": "Lambda function to facilitate modification of tags",
+  "main": "app.js",
+  "author": "jantan",
+  "dependencies": {
+    "aws-sdk": "^2.263.1"
+  }
+}
