@@ -1,0 +1,100 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+    sam-app
+
+    Sample SAM Template for sam-app
+    
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+    Function:
+        Timeout: 3
+
+
+Resources:
+
+    EC2RunInstanceTagValidationFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: ec2_runinstance_tag_validation/
+            Handler: app.handler
+            Runtime: nodejs8.10
+            Role: !GetAtt IAMTagValidationEnforcementExecutionRole.Arn
+            Events:
+                RunInstancesEvent:
+                    Type: CloudWatchEvent
+                    Properties:
+                        Pattern:
+                            source: 
+                                - "aws.ec2"
+                            detail:
+                                eventName: 
+                                    - "RunInstances"
+
+    UserGroupMetadataTable:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            AttributeDefinitions:
+                - AttributeName: "GroupARN"
+                  AttributeType: "S"
+            KeySchema:
+                - AttributeName: "GroupARN"
+                  KeyType: "HASH"
+            ProvisionedThroughput:
+                ReadCapacityUnits: 5
+                WriteCapacityUnits: 5
+            TableName: "user_group_metadata"
+    
+    IAMTagValidationEnforcementExecutionRole:
+        Type: "AWS::IAM::Role"
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    -
+                        Effect: "Allow"
+                        Principal:
+                            Service:
+                                - "lambda.amazonaws.com"
+                        Action:
+                            - "sts:AssumeRole"
+            ManagedPolicyArns:
+                - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+            Policies:
+                -
+                    PolicyName: "IAMReadListUserGroup"
+                    PolicyDocument:
+                        Version: "2012-10-17"
+                        Statement:
+                            -
+                                Effect: "Allow"
+                                Action:
+                                    - "iam:ListGroupsForUser"
+                                Resource: "*"
+                -
+                    PolicyName: "DDBUserGroupMetadata"
+                    PolicyDocument:
+                        Version: "2012-10-17"
+                        Statement:
+                            -
+                                Effect: "Allow"
+                                Action:
+                                    - "dynamodb:GetItem"
+                                Resource: !GetAtt UserGroupMetadataTable.Arn
+                -
+                    PolicyName: "EC2Information"
+                    PolicyDocument:
+                        Version: "2012-10-17"
+                        Statement:
+                            -
+                                Effect: "Allow"
+                                Action:
+                                    - "ec2:DescribeTags"
+                                    - "ec2:CreateTags"
+                                    - "ec2:DescribeInstances"
+                                Resource: "*"
+Outputs:
+
+    EC2RunInstanceTagValidationFunction:
+      Description: "EC2 RunInstance Tag Validation Lambda Function ARN"
+      Value: !GetAtt EC2RunInstanceTagValidationFunction.Arn

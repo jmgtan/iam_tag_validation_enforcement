@@ -1,0 +1,10 @@
+{
+  "name": "ec2_runinstance_tag_validation",
+  "version": "0.1",
+  "description": "Lambda function to validate EC2/EBS tagging.",
+  "main": "app.js",
+  "author": "jantan",
+  "dependencies": {
+    "aws-sdk": "^2.263.1"
+  }
+}
