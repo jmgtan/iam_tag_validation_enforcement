@@ -13,7 +13,7 @@ exports.handler = async(event) => {
     var iam = new AWS.IAM();
 
     var tableName = "user_group_metadata";
-    var requiredTags = ["Department", "Service"];
+    var requiredTags = ["CostCenter", "Department", "Service"];
 
     var body = event.body;
     var body = JSON.parse(body);
@@ -85,10 +85,17 @@ exports.handler = async(event) => {
                         if (resourceId in instanceTagsMap) {
                             instanceTagMap = instanceTagsMap[resourceId];
 
-                            if (instanceTagMap[requiredTags[0]] == requiredTagsMap[requiredTags[0]]
-                                && instanceTagMap[requiredTags[1]] == requiredTagsMap[requiredTags[1]]) {
-                                    finalResourceIds.push(resourceId);
-                                }
+                            var complianceCount = 0;
+
+                            for (complianceCheck=0;complianceCheck<requiredTags.length;complianceCheck++) {
+                                if (instanceTagMap[requiredTags[complianceCheck]] == requiredTagsMap[requiredTags[complianceCheck]]) {
+                                        complianceCount++;
+                                    }
+                            }
+
+                            if (complianceCount == requiredTags.length) {
+                                finalResourceIds.push(resourceId);
+                            }
                         }
                     }
 
@@ -99,6 +106,24 @@ exports.handler = async(event) => {
                         };
 
                         var createTagsResult = await ec2.createTags(params).promise();
+
+                        //create audit log
+                        var putItemParams = {
+                            Item: {
+                                "RequestedBy": {
+                                    S: requesterUsername
+                                },
+                                "RequestedOn": {
+                                    N: ""+Date.now()
+                                },
+                                "Payload": {
+                                    S: JSON.stringify(params)
+                                }
+                            },
+                            TableName: "tag_modification_audit_logs"
+                        }
+
+                        await dynamodb.putItem(putItemParams).promise();
 
                         return generateResponse(200, {updated_resource_ids: finalResourceIds});
                     }

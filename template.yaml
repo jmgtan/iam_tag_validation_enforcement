@@ -58,6 +58,24 @@ Resources:
                 ReadCapacityUnits: 5
                 WriteCapacityUnits: 5
             TableName: "user_group_metadata"
+
+    TagModificationAuditLogsTable:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            AttributeDefinitions:
+                - AttributeName: "RequestedBy"
+                  AttributeType: "S"
+                - AttributeName: "RequestedOn"
+                  AttributeType: "N"
+            KeySchema:
+                - AttributeName: "RequestedBy"
+                  KeyType: "HASH"
+                - AttributeName: "RequestedOn"
+                  KeyType: "RANGE"
+            ProvisionedThroughput:
+                ReadCapacityUnits: 5
+                WriteCapacityUnits: 5
+            TableName: "tag_modification_audit_logs"
     
     IAMTagValidationEnforcementExecutionRole:
         Type: "AWS::IAM::Role"
@@ -94,7 +112,10 @@ Resources:
                                 Effect: "Allow"
                                 Action:
                                     - "dynamodb:GetItem"
-                                Resource: !GetAtt UserGroupMetadataTable.Arn
+                                    - "dynamodb:PutItem"
+                                Resource: 
+                                    - !GetAtt UserGroupMetadataTable.Arn
+                                    - !GetAtt TagModificationAuditLogsTable.Arn
                 -
                     PolicyName: "EC2Information"
                     PolicyDocument:
